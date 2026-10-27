@@ -1,0 +1,36 @@
+{
+	"info": {
+		"name": "Petshop API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Categories",
+			"request": {
+				"method": "GET",
+				"url": { "raw": "http://127.0.0.1:8000/api/categories", "host": ["http://127.0.0.1:8000"], "path": ["api", "categories"] }
+			}
+		},
+		{
+			"name": "Get Brands",
+			"request": {
+				"method": "GET",
+				"url": { "raw": "http://127.0.0.1:8000/api/brands", "host": ["http://127.0.0.1:8000"], "path": ["api", "brands"] }
+			}
+		},
+		{
+			"name": "Get Products",
+			"request": {
+				"method": "GET",
+				"url": { "raw": "http://127.0.0.1:8000/api/products", "host": ["http://127.0.0.1:8000"], "path": ["api", "products"] }
+			}
+		},
+		{
+			"name": "Delete Category (Test 409 Conflict)",
+			"request": {
+				"method": "DELETE",
+				"url": { "raw": "http://127.0.0.1:8000/api/categories/1", "host": ["http://127.0.0.1:8000"], "path": ["api", "categories", "1"] }
+			}
+		}
+	]
+}
