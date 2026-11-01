@@ -1,1 +1,21 @@
 .DS_Store
+mkdir faculty-site && cd faculty-site
+git init -b main
+
+cat > .gitignore <<'EOF'
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Django: базу не додають на git, структуру відтворюють міграції
+db.sqlite3
+
+# IDE / OS
+.idea/
+.vscode/
+EOF
+
+python3 -m venv venv
+source venv/bin/activate
