@@ -4,6 +4,8 @@ from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from users.permissions import IsAdminOrReadOnly
+
 from .models import Brand, Category, Product
 from .serializers import BrandSerializer, CategorySerializer, ProductSerializer
 
@@ -25,6 +27,7 @@ def read_json(request):
 class BaseListAPIView(APIView):
     queryset = None
     serializer_class = None
+    permission_classes = [IsAdminOrReadOnly]
 
     def get(self, request):
         objects = self.queryset.order_by('id')
@@ -51,10 +54,9 @@ class BaseListAPIView(APIView):
 class BaseDetailAPIView(APIView):
     queryset = None
     serializer_class = None
-    # "{pk}" is replaced with the id from the URL
+    permission_classes = [IsAdminOrReadOnly]
+
     not_found_message = ''
-    # "{name}" and "{count}" are replaced with the object name and the number
-    # of products that block the deletion. Empty -> nothing blocks deletion.
     delete_conflict_message = ''
 
     def get_object(self, pk):
