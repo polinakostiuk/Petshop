@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'pets',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -131,7 +132,15 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:63342',
 ]
 
+
 REST_FRAMEWORK = {
 
-    'EXCEPTION_HANDLER': 'pets.exceptions.custom_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'users.authentication.JWTAuthentication',
+    ],
+
+    'EXCEPTION_HANDLER': 'users.exceptions.api_exception_handler',
 }
+
+JWT_ACCESS_LIFETIME_SECONDS = 5 * 60
+JWT_REFRESH_LIFETIME_SECONDS = 7 * 24 * 60 * 60
