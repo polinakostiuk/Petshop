@@ -1,12 +1,35 @@
 {
   "info": {
     "name": "PetShop API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Спочатку запустіть папку \"0 Вхід адміністратора\" (потрібен створений через createsuperuser адмін; логін і пароль у змінних колекції admin_username / admin_password). Далі запускайте по порядку або Run collection."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_access_token}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
     {
       "key": "base_url",
       "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "admin_username",
+      "value": "admin"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin12345"
+    },
+    {
+      "key": "admin_access_token",
+      "value": ""
     },
     {
       "key": "category_id",
@@ -18,10 +41,120 @@
     },
     {
       "key": "product_id",
-            "value": ""
+      "value": ""
+    },
+    {
+      "key": "reg_username",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
     }
   ],
   "item": [
+    {
+      "name": "0 Вхід адміністратора",
+      "item": [
+        {
+          "name": "Вхід адміністратора (зберігає admin_access_token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"admin_access_token\", pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{admin_username}}\", \"password\": \"{{admin_password}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Вхід адміністратора (зберігає admin_access_token)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"{{admin_username}}\", \"password\": \"{{admin_password}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "200",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLC4uLn0.c2lnbmF0dXJl\",\n  \"refresh\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLC4uLn0.c2lnbmF0dXJl\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"first_name\": \"Анна\",\n    \"last_name\": \"Коваль\",\n    \"email\": \"user1@example.com\",\n    \"is_staff\": true,\n    \"date_joined\": \"2026-11-09T19:00:00Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
     {
       "name": "1 Категорії",
       "item": [
@@ -48,7 +181,7 @@
               }
             ],
             "url": {
-                     "raw": "{{base_url}}/api/categories",
+              "raw": "{{base_url}}/api/categories",
               "host": [
                 "{{base_url}}"
               ],
@@ -70,6 +203,34 @@
           "response": [
             {
               "name": "Створити категорію",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Корм\", \"description\": \"Сухий і вологий корм\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "201",
               "code": 201,
               "header": [
@@ -78,7 +239,7 @@
                   "value": "application/json"
                 }
               ],
-                   "body": "{\"id\": 1, \"name\": \"Корм\", \"description\": \"Сухий і вологий корм\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Корм\",\n  \"description\": \"Сухий і вологий корм\"\n}"
             }
           ]
         },
@@ -117,6 +278,25 @@
           "response": [
             {
               "name": "Список категорій",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -125,8 +305,8 @@
                   "value": "application/json"
                 }
               ],
-              "body": "[{\"id\": 1, \"name\": \"Корм\", \"description\": \"Сухий і вологий корм\"}]"
-                      }
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Корм\",\n    \"description\": \"Сухий і вологий корм\"\n  }\n]"
+            }
           ]
         },
         {
@@ -165,6 +345,26 @@
           "response": [
             {
               "name": "Одна категорія",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories/{{category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories",
+                    "{{category_id}}"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -173,7 +373,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"Корм\", \"description\": \"Сухий і вологий корм\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Корм\",\n  \"description\": \"Сухий і вологий корм\"\n}"
             }
           ]
         },
@@ -222,6 +422,35 @@
           "response": [
             {
               "name": "Оновити категорію",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories/{{category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories",
+                    "{{category_id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Корм\", \"description\": \"Оновлено\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -230,7 +459,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"Корм\", \"description\": \"Оновлено\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Корм\",\n  \"description\": \"Оновлено\"\n}"
             }
           ]
         }
@@ -284,6 +513,34 @@
           "response": [
             {
               "name": "Створити бренд",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"HappyPaws\", \"country\": \"Німеччина\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "201",
               "code": 201,
               "header": [
@@ -292,7 +549,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"HappyPaws\", \"country\": \"Німеччина\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"HappyPaws\",\n  \"country\": \"Німеччина\"\n}"
             }
           ]
         },
@@ -331,6 +588,25 @@
           "response": [
             {
               "name": "Список брендів",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -339,7 +615,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "[{\"id\": 1, \"name\": \"HappyPaws\", \"country\": \"Німеччина\"}]"
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"HappyPaws\",\n    \"country\": \"Німеччина\"\n  }\n]"
             }
           ]
         },
@@ -379,6 +655,26 @@
           "response": [
             {
               "name": "Один бренд",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands/{{brand_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands",
+                    "{{brand_id}}"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -387,7 +683,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"HappyPaws\", \"country\": \"Німеччина\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"HappyPaws\",\n  \"country\": \"Німеччина\"\n}"
             }
           ]
         },
@@ -436,6 +732,35 @@
           "response": [
             {
               "name": "Оновити бренд",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands/{{brand_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands",
+                    "{{brand_id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"HappyPaws\", \"country\": \"Польща\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -444,7 +769,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"HappyPaws\", \"country\": \"Польща\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"HappyPaws\",\n  \"country\": \"Польща\"\n}"
             }
           ]
         }
@@ -498,6 +823,34 @@
           "response": [
             {
               "name": "Створити товар",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Сухий корм для собак\", \"description\": \"Для дорослих собак\", \"price\": \"450.00\", \"stock\": 25, \"category\": \"{{category_id}}\", \"brand\": \"{{brand_id}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "201",
               "code": 201,
               "header": [
@@ -506,7 +859,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"category_name\": \"Корм\", \"brand_name\": \"HappyPaws\", \"name\": \"Сухий корм для собак\", \"price\": \"450.00\", \"stock\": 25, \"category\": 1, \"brand\": 1}"
+              "body": "{\n  \"id\": 1,\n  \"category_name\": \"Корм\",\n  \"brand_name\": \"HappyPaws\",\n  \"name\": \"Сухий корм для собак\",\n  \"price\": \"450.00\",\n  \"stock\": 25,\n  \"category\": 1,\n  \"brand\": 1\n}"
             }
           ]
         },
@@ -545,6 +898,25 @@
           "response": [
             {
               "name": "Список товарів",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -553,7 +925,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "[ { \"id\": 1, \"name\": \"Сухий корм для собак\", \"price\": \"450.00\" } ]"
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Сухий корм для собак\",\n    \"price\": \"450.00\"\n  }\n]"
             }
           ]
         },
@@ -593,6 +965,26 @@
           "response": [
             {
               "name": "Один товар",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products/{{product_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "{{product_id}}"
+                  ]
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -601,7 +993,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"Сухий корм для собак\", \"price\": \"450.00\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Сухий корм для собак\",\n  \"price\": \"450.00\"\n}"
             }
           ]
         },
@@ -650,6 +1042,35 @@
           "response": [
             {
               "name": "Оновити товар",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products/{{product_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "{{product_id}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Сухий корм для собак\", \"description\": \"Для дорослих собак\", \"price\": \"499.00\", \"stock\": 25, \"category\": \"{{category_id}}\", \"brand\": \"{{brand_id}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "200",
               "code": 200,
               "header": [
@@ -658,7 +1079,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"id\": 1, \"name\": \"Сухий корм для собак\", \"price\": \"499.00\"}"
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Сухий корм для собак\",\n  \"price\": \"499.00\"\n}"
             }
           ]
         }
@@ -711,6 +1132,34 @@
           "response": [
             {
               "name": "400: некоректні дані",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"\", \"price\": \"-5\", \"stock\": 1, \"category\": 99999, \"brand\": 99999}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "400",
               "code": 400,
               "header": [
@@ -719,7 +1168,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"error\": \"Некоректні дані.\", \"details\": {\"name\": [\"Це поле не може бути порожнім.\"]}}"
+              "body": "{\n  \"error\": \"Некоректні дані.\",\n  \"details\": {\n    \"name\": [\n      \"Це поле не може бути порожнім.\"\n    ]\n  }\n}"
             }
           ]
         },
@@ -767,6 +1216,34 @@
           "response": [
             {
               "name": "400: повторна назва категорії",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Корм\", \"description\": \"Сухий і вологий корм\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
               "status": "400",
               "code": 400,
               "header": [
@@ -775,7 +1252,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"error\": \"Некоректні дані.\", \"details\": {\"name\": [\"Категорія з такою назвою вже існує.\"]}}"
+              "body": "{\n  \"error\": \"Некоректні дані.\",\n  \"details\": {\n    \"name\": [\n      \"Категорія з такою назвою вже існує.\"\n    ]\n  }\n}"
             }
           ]
         },
@@ -815,6 +1292,26 @@
           "response": [
             {
               "name": "404: товару немає",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products/999999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "999999"
+                  ]
+                }
+              },
               "status": "404",
               "code": 404,
               "header": [
@@ -823,7 +1320,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"error\": \"Товар з id=999999 не знайдено.\"}"
+              "body": "{\n  \"error\": \"Товар з id=999999 не знайдено.\"\n}"
             }
           ]
         },
@@ -863,6 +1360,26 @@
           "response": [
             {
               "name": "409: категорія з товарами",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories/{{category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories",
+                    "{{category_id}}"
+                  ]
+                }
+              },
               "status": "409",
               "code": 409,
               "header": [
@@ -871,7 +1388,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"error\": \"Неможливо видалити категорію «Корм»: до неї належить товарів - 1.\"}"
+              "body": "{\n  \"error\": \"Неможливо видалити категорію «Корм»: до неї належить товарів - 1.\"\n}"
             }
           ]
         },
@@ -911,6 +1428,26 @@
           "response": [
             {
               "name": "409: бренд з товарами",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands/{{brand_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands",
+                    "{{brand_id}}"
+                  ]
+                }
+              },
               "status": "409",
               "code": 409,
               "header": [
@@ -919,7 +1456,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\"error\": \"Неможливо видалити бренд «HappyPaws»: з ним пов'язано товарів - 1.\"}"
+              "body": "{\n  \"error\": \"Неможливо видалити бренд «HappyPaws»: з ним пов'язано товарів - 1.\"\n}"
             }
           ]
         }
@@ -964,6 +1501,26 @@
           "response": [
             {
               "name": "Видалити товар",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/products/{{product_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "products",
+                    "{{product_id}}"
+                  ]
+                }
+              },
               "status": "204",
               "code": 204,
               "header": [
@@ -1012,6 +1569,26 @@
           "response": [
             {
               "name": "Видалити категорію",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories/{{category_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories",
+                    "{{category_id}}"
+                  ]
+                }
+              },
               "status": "204",
               "code": 204,
               "header": [
@@ -1060,6 +1637,26 @@
           "response": [
             {
               "name": "Видалити бренд",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/brands/{{brand_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "brands",
+                    "{{brand_id}}"
+                  ]
+                }
+              },
               "status": "204",
               "code": 204,
               "header": [
@@ -1069,6 +1666,1199 @@
                 }
               ],
               "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 Реєстрація, вхід і права доступу",
+      "item": [
+        {
+          "name": "Реєстрація",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"reg_username\", \"user\" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reg_username}}\", \"first_name\": \"Анна\", \"last_name\": \"Коваль\", \"email\": \"{{reg_username}}@example.com\", \"password\": \"Str0ng-pass-2026\", \"password_confirmation\": \"Str0ng-pass-2026\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Реєстрація",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"{{reg_username}}\", \"first_name\": \"Анна\", \"last_name\": \"Коваль\", \"email\": \"{{reg_username}}@example.com\", \"password\": \"Str0ng-pass-2026\", \"password_confirmation\": \"Str0ng-pass-2026\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "201",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 2,\n  \"username\": \"user1\",\n  \"first_name\": \"Анна\",\n  \"last_name\": \"Коваль\",\n  \"email\": \"user1@example.com\",\n  \"is_staff\": false,\n  \"date_joined\": \"2026-11-09T19:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Реєстрація: помилки валідації (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"\", \"email\": \"not-an-email\", \"password\": \"12345678\", \"password_confirmation\": \"other\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Реєстрація: помилки валідації (400)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"\", \"email\": \"not-an-email\", \"password\": \"12345678\", \"password_confirmation\": \"other\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "400",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Некоректні дані.\",\n  \"details\": {\n    \"username\": [\n      \"Це поле не може бути порожнім.\"\n    ],\n    \"email\": [\n      \"Введіть коректну адресу електронної пошти.\"\n    ],\n    \"password\": [\n      \"Пароль занадто поширений.\",\n      \"Цей пароль повністю складається із цифр.\"\n    ],\n    \"password_confirmation\": [\n      \"Паролі не збігаються.\"\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Реєстрація: ім'я вже зайняте (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reg_username}}\", \"first_name\": \"Анна\", \"last_name\": \"Коваль\", \"email\": \"{{reg_username}}@example.com\", \"password\": \"Str0ng-pass-2026\", \"password_confirmation\": \"Str0ng-pass-2026\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Реєстрація: ім'я вже зайняте (400)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"{{reg_username}}\", \"first_name\": \"Анна\", \"last_name\": \"Коваль\", \"email\": \"{{reg_username}}@example.com\", \"password\": \"Str0ng-pass-2026\", \"password_confirmation\": \"Str0ng-pass-2026\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "400",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Некоректні дані.\",\n  \"details\": {\n    \"username\": [\n      \"Користувач з таким іменем вже існує.\"\n    ],\n    \"email\": [\n      \"Користувач з таким email вже існує.\"\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Вхід (зберігає access_token і refresh_token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"access_token\", pm.response.json().access);",
+                  "pm.collectionVariables.set(\"refresh_token\", pm.response.json().refresh);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reg_username}}\", \"password\": \"Str0ng-pass-2026\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Вхід (зберігає access_token і refresh_token)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"{{reg_username}}\", \"password\": \"Str0ng-pass-2026\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "200",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLC4uLn0.c2lnbmF0dXJl\",\n  \"refresh\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLC4uLn0.c2lnbmF0dXJl\",\n  \"user\": {\n    \"id\": 2,\n    \"username\": \"user1\",\n    \"first_name\": \"Анна\",\n    \"last_name\": \"Коваль\",\n    \"email\": \"user1@example.com\",\n    \"is_staff\": false,\n    \"date_joined\": \"2026-11-09T19:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Вхід: неправильний пароль (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reg_username}}\", \"password\": \"wrong\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Вхід: неправильний пароль (401)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"{{reg_username}}\", \"password\": \"wrong\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "401",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Невірне ім'я користувача або пароль.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Мій профіль (з токеном)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Мій профіль (з токеном)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": "200",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 2,\n  \"username\": \"user1\",\n  \"first_name\": \"Анна\",\n  \"last_name\": \"Коваль\",\n  \"email\": \"user1@example.com\",\n  \"is_staff\": false,\n  \"date_joined\": \"2026-11-09T19:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Мій профіль без токена (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "Мій профіль без токена (401)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                }
+              },
+              "status": "401",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Потрібна авторизація. Увійдіть і передайте access-токен у заголовку Authorization: Bearer <токен>.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Змінити дані без токена (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Іграшки\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Змінити дані без токена (401)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Іграшки\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "401",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Потрібна авторизація. Увійдіть і передайте access-токен у заголовку Authorization: Bearer <токен>.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Змінити дані звичайним користувачем (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Іграшки\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Змінити дані звичайним користувачем (403)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/categories",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "categories"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"name\": \"Іграшки\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "403",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Недостатньо прав: цю дію може виконати лише адміністратор.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Профіль з неправильним токеном (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "not-a-token",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Профіль з неправильним токеном (401)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "not-a-token",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": "401",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Токен пошкоджений або має неправильний формат.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Оновити access за refresh (зберігає новий access_token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"access_token\", pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refresh\": \"{{refresh_token}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Оновити access за refresh (зберігає новий access_token)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "refresh"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"refresh\": \"{{refresh_token}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "200",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyLC4uLn0.c2lnbmF0dXJl\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Профіль з новим access-токеном",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Профіль з новим access-токеном",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/users/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "me"
+                  ]
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": "200",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": 2,\n  \"username\": \"user1\",\n  \"first_name\": \"Анна\",\n  \"last_name\": \"Коваль\",\n  \"email\": \"user1@example.com\",\n  \"is_staff\": false,\n  \"date_joined\": \"2026-11-09T19:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh: передано access замість refresh (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Статус 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refresh\": \"{{access_token}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Refresh: передано access замість refresh (401)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "refresh"
+                  ]
+                },
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"refresh\": \"{{access_token}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "401",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Токен не підходить для цієї дії (неправильний тип).\"\n}"
             }
           ]
         }
