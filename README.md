@@ -3,6 +3,16 @@
 PetShop допомагає власникам домашніх тварин швидко знайти й замовити все необхідне для свого улюбленця.
 Ідея: господар обирає, для кого шукає товар (собака, кіт, гризун, птах, рибки), і одразу бачить лише потрібні товари. Не треба гортати весь асортимент: достатньо вибрати вид тварини, категорію чи бренд.
 
+### Що реалізовано зараз
+
+| Частина | Стан |
+|---|---|
+| Каталог: категорії, бренди, товари (CRUD API) | реалізовано |
+| Реєстрація, вхід (JWT), оновлення токена, профіль, права доступу (admin / користувач) | реалізовано |
+| Автотести, покриття, документація OpenAPI (Swagger UI), логування, `.env` | реалізовано |
+| Фронтенд: каталог, реєстрація, вхід, профіль | реалізовано (окремий репозиторій) |
+| Пошук, фільтри, пагінація, види тварин, кошик, замовлення, «Про нас» | заплановано (див. розділ «Запланований функціонал» унизу) |
+
 ## Як запустити проєкт
 
 Потрібні Python 3.12+ та Git.
@@ -11,342 +21,297 @@ PetShop допомагає власникам домашніх тварин шв
 git clone https://github.com/polinakostiuk/Petshop.git
 cd Petshop
 python3 -m venv venv
-source venv/bin/activate       
+source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env              
 python manage.py migrate
+python manage.py createsuperuser 
 python manage.py runserver 8000
 ```
 
+Без файлу `.env` проєкт не запуститься: Django попросить задати `SECRET_KEY`.
+
 API доступне за адресою http://127.0.0.1:8000/api/, наприклад http://127.0.0.1:8000/api/products
 
-Фронтенд лежить в окремому репозиторії: [Petshop-frontend](https://github.com/polinakostiuk/Petshop-frontend). Він працює на порту 3000, тому в `config/settings.py` налаштований CORS (`CORS_ALLOWED_ORIGINS`).
+Фронтенд лежить в окремому репозиторії: [Petshop-frontend](https://github.com/polinakostiuk/Petshop-frontend). Він працює на порту 3000, тому налаштований CORS (`CORS_ALLOWED_ORIGINS` у `.env`).
 
-## Помилки
+## Змінні середовища (.env)
 
-Помилки `400`, `404` і `409` мають однаковий формат: `{"error": "..."}`. Для `400` додається `details` з описом проблеми по полях.
+Секретні та залежні від комп'ютера налаштування лежать у файлі `.env`. Він додано до `.gitignore`, тому в Git не потрапляє. У репозиторії є лише шаблон `.env.example` без справжніх секретів. Значення читаються в `config/settings.py` бібліотекою `python-dotenv`.
+
+| Змінна | Що це | Приклад |
+|---|---|---|
+| `SECRET_KEY` | секретний ключ Django, ним же підписуються JWT-токени. **Обов'язкова** | довгий випадковий рядок |
+| `DEBUG` | режим розробки (`True` лише локально, на сервері `False`) | `True` |
+| `ALLOWED_HOSTS` | дозволені адреси сервера через кому | `127.0.0.1,localhost` |
+| `CORS_ALLOWED_ORIGINS` | адреси фронтенду, яким дозволено звертатися до API, через кому | `http://127.0.0.1:3000,http://localhost:3000` |
+| `LOG_LEVEL` | рівень логування: `DEBUG`, `INFO`, `WARNING`, `ERROR` | `INFO` |
+
+Підготувати локальне середовище:
+
+```bash
+cp .env.example .env
+# згенерувати власний секретний ключ і вписати його в .env як SECRET_KEY
+python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
+```
+
+## Тести
+
+Тести перевіряють основні сценарії ресурсу **товари** (`/api/products`): читання, створення, повну заміну (PUT), видалення, а також негативні сценарії: некоректні дані (`400`), неіснуючий id (`404`), дії без токена (`401`) і зі звичайним користувачем (`403`), метод PATCH (`405`), видалення категорії чи бренду з товарами (`409`). Окремо перевіряються логування й відкриття документації.
+
+Дані для тестів готують **фікстури**: файл `pets/fixtures/catalog.json` (3 категорії, 3 бренди, 3 товари) і користувачі, яких створює `setUpTestData`. Перед кожним тестом база повертається до цього стану.
+
+```bash
+python manage.py test              
+python manage.py test pets         
+python manage.py test users       
+```
+
+### Покриття тестами
+
+Покриття вимірюється інструментом `coverage.py` (налаштування в `.coveragerc`):
+
+```bash
+coverage run manage.py test     
+coverage report                    
+coverage html                      
+```
+
+## Документація API (OpenAPI)
+
+Документація генерується автоматично бібліотекою `drf-spectacular` і завжди відповідає реальному коду. Запустіть сервер і відкрийте:
+
+* **Swagger UI**: http://127.0.0.1:8000/api/docs/ (можна пробувати запити прямо на сторінці)
+* **ReDoc**: http://127.0.0.1:8000/api/redoc/
+* **OpenAPI-схема** (YAML): http://127.0.0.1:8000/api/schema/
+
+Файл схеми вже лежить у репозиторії (`schema.yml`), його можна відкрити на https://editor.swagger.io. Оновити його:
+
+```bash
+python manage.py spectacular --file schema.yml
+```
+
+Для захищених запитів у Swagger UI: виконайте `POST /api/auth/login`, скопіюйте значення `access`, натисніть кнопку **Authorize** і вставте токен (слово `Bearer` писати не треба). Для кожного ендпоінта ресурсів **Товари**, **Бренди**, **Категорії** та **Авторизація** описано адресу, метод, параметри, структуру запиту й відповіді, приклади, коди помилок і вимоги до авторизації.
+
+## Логування
+
+Логи пишуться в консоль і у файл `logs/petshop.log` (до 1 МБ, лишається 3 старі копії; папка в `.gitignore`). Рівень задає змінна `LOG_LEVEL`.
+
+| Рівень | Що логується | Приклад |
+|---|---|---|
+| `DEBUG` | дрібні подробиці | `/api/products: список, об'єктів - 3` |
+| `INFO` | важливі успішні події | `POST /api/products: створено id=4 користувачем admin`, `Користувач anna увійшов (id=2)` |
+| `WARNING` | клієнт зробив щось не так, сервер працює нормально | `Невдала спроба входу для anna`, `/api/products/999: об'єкт id=999 не знайдено`, `DELETE ... заборонено для anna`, `токен відхилено: Термін дії токена закінчився.` |
+| `ERROR` | збій на сервері (500) разом із трасуванням | `Необроблена помилка під час GET /api/...` |
+
+**Паролі, токени та інші чутливі дані в логи не потрапляють:** логуються лише імена користувачів, id об'єктів, адреси запитів і причини відмов. Це перевіряють автотести.
+
+## Postman
+
+Колекція лежить у `postman/petshop.postman_collection.json`. Імпортуйте її в Postman (**Import**) і запустіть **Run collection**. Адреса сервера задана змінною `base_url` (за замовчуванням `http://127.0.0.1:8000`). У колекції є приклади успішних відповідей та помилок `400`, `401`, `403`, `404`, `409`.
+
+Порядок: спочатку папка **0 Вхід адміністратора**. Вона логіниться під адміністратором (змінні колекції `admin_username` і `admin_password`; змініть їх на дані свого суперкористувача з `createsuperuser`) і зберігає `admin_access_token`. З цим токеном працюють створення, редагування й видалення в папках 1-5.
+
+Папка **6 Реєстрація, вхід і права доступу** містить реєстрацію, логін, профіль, оновлення access за refresh, а також приклади `401` і `403`.
+
+## Загальні домовленості API
+
+* Дані передаються у форматі JSON (`Content-Type: application/json`).
+* Базовий префікс усіх адрес: `/api`. Адреси без `/` в кінці.
+* В адресах іменники у множині, без дієслів. Дію визначає метод запиту: `GET` читає, `POST` створює, `PUT` повністю замінює, `DELETE` видаляє. Часткового оновлення (`PATCH`) немає, на нього відповідь `405`.
+* Списки повертаються цілим масивом, відсортованим за `id` (пагінації поки немає).
+* Захищені запити потребують заголовок `Authorization: Bearer <access-токен>` (див. розділ «Авторизація та права доступу»).
+* Використовувані коди відповідей: `200 OK`, `201 Created`, `204 No Content`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `405 Method Not Allowed`, `409 Conflict`.
+
+### Помилки
+
+Усі помилки мають однаковий формат: `{"error": "..."}`. Для `400` додається `details` з описом проблеми по полях.
 
 | Код | Коли | Приклад відповіді |
 |---|---|---|
 | `400` | некоректні дані (порожня назва, ціна менше 0.01, неіснуючий `category`/`brand`, повторна назва, зламаний JSON) | `{"error": "Некоректні дані.", "details": {"name": ["Це поле не може бути порожнім."]}}` |
-| `404` | об'єкта з таким `id` немає | `{"error": "Товар з id=999999 не знайдено."}` |
-| `409` | не можна видалити категорію чи бренд, у яких є товари | `{"error": "Неможливо видалити категорію «Корм»: до неї належить товарів - 1."}` |
 | `401` | немає access-токена, він прострочений або неправильний; невірний логін чи пароль | `{"error": "Потрібна авторизація. Увійдіть і передайте access-токен у заголовку Authorization: Bearer <токен>."}` |
 | `403` | користувач увійшов, але не адміністратор | `{"error": "Недостатньо прав: цю дію може виконати лише адміністратор."}` |
+| `404` | об'єкта з таким `id` немає | `{"error": "Товар з id=999999 не знайдено."}` |
+| `405` | метод не підтримується (наприклад, `PATCH`) | `{"error": "..."}` |
+| `409` | не можна видалити категорію чи бренд, у яких є товари | `{"error": "Неможливо видалити категорію «Корм»: до неї належить товарів - 1."}` |
 
-## Postman
+### Усі ендпоінти коротко
 
-Колекція лежить у `postman/petshop.postman_collection.json`. Імпортуйте її в Postman (**Import**) і запустіть **Run collection**. Адреса сервера задана змінною `base_url` (за замовчуванням `http://127.0.0.1:8000`). У колекції є приклади успішних відповідей та помилок `400`, `404`, `409`.
-Порядок: спочатку папка **0 Вхід адміністратора**. Вона логіниться під адміністратором (змінні колекції `admin_username` і `admin_password`; змініть їх на дані свого суперкористувача з `createsuperuser`) і зберігає `admin_access_token`. З цим токеном працюють створення, редагування й видалення в папках 1-5. 
-Папка **6 Реєстрація, вхід і права доступу** містить реєстрацію, логін, профіль, оновлення access за refresh, а також приклади `401` і `403`.
+| Метод | Адреса | Опис | Доступ |
+|---|---|---|---|
+| GET | `/api/products` | Список товарів | всі |
+| GET | `/api/products/{id}` | Один товар | всі |
+| POST | `/api/products` | Створити товар | admin |
+| PUT | `/api/products/{id}` | Замінити товар | admin |
+| DELETE | `/api/products/{id}` | Видалити товар | admin |
+| GET | `/api/brands` | Список брендів | всі |
+| GET | `/api/brands/{id}` | Один бренд | всі |
+| POST | `/api/brands` | Створити бренд | admin |
+| PUT | `/api/brands/{id}` | Замінити бренд | admin |
+| DELETE | `/api/brands/{id}` | Видалити бренд | admin |
+| GET | `/api/categories` | Список категорій | всі |
+| GET | `/api/categories/{id}` | Одна категорія | всі |
+| POST | `/api/categories` | Створити категорію | admin |
+| PUT | `/api/categories/{id}` | Замінити категорію | admin |
+| DELETE | `/api/categories/{id}` | Видалити категорію | admin |
+| POST | `/api/auth/register` | Реєстрація | всі |
+| POST | `/api/auth/login` | Вхід (повертає `access` і `refresh`) | всі |
+| POST | `/api/auth/refresh` | Новий `access` за `refresh` | всі |
+| GET | `/api/users/me` | Мій профіль | потрібен вхід |
 
-### Що є на сайті
+## Детальний опис ендпоінтів
 
-Каталог товарів з пошуком за назвою, фільтрами (вид тварини, категорія, бренд, ціна) та сортуванням (від найдешевших, від найдорожчих, за популярністю).
-Сторінка товару: опис, ціна, фото, бренд, категорія, для якої тварини, наявність.
-Сторінка брендів: при переході на бренд видно всі його товари.
-Сторінка категорій: при переході на категорію видно всі її товари.
-Керування асортиментом: адміністратор додає, редагує та видаляє товари, бренди й категорії.
-Реєстрація та вхід.
-Профіль: історія замовлень, редагування своїх даних.
-Кошик: додати товар, змінити кількість, прибрати зайве.
-Замовлення: після натискання «Купити» з товарів кошика створюється замовлення (спрощено: без оплати й додаткових даних).
-Сторінка «Про нас»: контакти, доставка, повернення.
+Те саме в інтерактивному вигляді: Swagger UI (`/api/docs/`).
 
-### Загальні домовленості API
+### Товари
 
-Дані передаються у форматі JSON (Content-Type: application/json).
-Базовий префікс усіх адрес: /api.
-В адресах іменники у множині, без дієслів. Дія визначається методом запиту: GET читає, POST створює, PUT оновлює, DELETE видаляє.
-Списки підтримують пагінацію: ?page=1&limit=20.
-Помилки повертаються у форматі:
-json
-{ "error": "Опис помилки" }
-Використовувані коди відповідей: 200 OK, 201 Created, 204 No Content, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict.
-Захищені ендпоінти потребують заголовок `Authorization: Bearer <access-токен>` (див. розділ «Авторизація та права доступу»).
-
-#### Усі ендпоінти коротко
-
-Метод   Адреса                        Опис                                             Доступ
-GET     /api/products                 Список товарів (пошук, фільтри, сортування)      всі
-GET     /api/products/{id}            Один товар                                       всі
-POST    /api/products                 Створити товар                                   admin
-PUT     /api/products/{id}            Оновити товар                                    admin
-DELETE  /api/products/{id}            Видалити товар                                   admin
-GET     /api/brands                   Список брендів                                   всі
-GET     /api/brands/{id}              Один бренд                                       всі
-GET     /api/brands/{id}/products     Товари бренду                                    всі
-POST    /api/brands                   Створити бренд                                   admin
-PUT     /api/brands/{id}              Оновити бренд                                    admin
-DELETE  /api/brands/{id}              Видалити бренд                                   admin
-GET     /api/categories               Список категорій                                 всі
-GET     /api/categories/{id}/products Товари категорії                                 всі
-POST    /api/categories               Створити категорію                               admin
-PUT     /api/categories/{id}          Оновити категорію                                admin
-DELETE  /api/categories/{id}          Видалити категорію                               admin
-GET     /api/pet-types                Види тварин (для фільтра)                        всі
-POST    /api/auth/register            Реєстрація                                       всі
-POST    /api/auth/login               Вхід                                             всі
-GET     /api/users/me                 Мій профіль                                      auth
-PUT     /api/users/me                 Редагувати мій профіль                           auth
-GET     /api/cart                     Мій кошик                                        auth
-POST    /api/cart/items               Додати товар у кошик                             auth
-PATCH   /api/cart/items/{productId}   Змінити кількість товару в кошику                auth
-DELETE  /api/cart/items/{productId}   Прибрати товар з кошика                          auth
-POST    /api/orders                   Створити замовлення з кошика                     auth
-GET     /api/orders                   Мої замовлення                                   auth
-GET     /api/orders/{id}              Деталі мого замовлення                           auth
-GET     /api/about                    Інформація «Про нас»                             всі
-POST    /api/auth/register            Реєстрація                                       всі
-POST    /api/auth/login               Вхід (повертає access і refresh токени)          всі
-POST    /api/auth/refresh             Новий access-токен за refresh-токеном            всі
-GET     /api/users/me                 Мій профіль                                      auth
-
-### Детальний опис ендпоінтів
-
-#### Товари
+Поля товару: `id`, `name`, `description`, `price`, `stock`, `created_at`, `category`, `brand` (це id категорії та бренду), а також `category_name` і `brand_name` (лише для читання). Ціна повертається **рядком** (`"349.90"`), щоб не втрачати точність.
 
 <details> <summary><code>GET /api/products</code> — список товарів</summary>
 
-Повертає список товарів з коротким описом (повна інформація доступна в GET /api/products/{id}).
-Query-параметри (усі необов'язкові):
-Параметр Опис
-search     пошук за назвою
-petTypeId фільтр за видом тварини
-categoryId фільтр за категорією
-brandId     фільтр за брендом
-minPrice,   maxPrice діапазон ціни
-sort     price_asc, price_desc, popularity
-page,       limit пагінація
+Токен не потрібен. Query-параметрів поки немає. Відповідь `200 OK` (масив, відсортований за `id`):
 
-#### Response 200 OK
+```json
+[
+  {
+    "id": 1,
+    "category_name": "Корм",
+    "brand_name": "Acana",
+    "name": "Сухий корм для собак, 2 кг",
+    "description": "Корм для дорослих собак середніх порід",
+    "price": "349.90",
+    "stock": 25,
+    "created_at": "2026-11-09T19:00:00Z",
+    "category": 1,
+    "brand": 1
+  }
+]
+```
 
+</details>
+
+<details> <summary><code>GET /api/products/{id}</code> — один товар</summary>
+
+Токен не потрібен.
+
+* `200 OK`: один об'єкт у тому самому форматі, що й елемент списку.
+* `404 Not Found`: `{"error": "Товар з id=999999 не знайдено."}`
+
+</details>
+
+<details> <summary><code>POST /api/products</code> — створити товар <b>(admin)</b></summary>
+
+Заголовок: `Authorization: Bearer <access-токен адміністратора>`.
+
+| Поле | Обов'язкове | Правила |
+|---|---|---|
+| `name` | так | до 200 символів, не порожнє |
+| `description` | ні | текст |
+| `price` | так | число не менше 0.01, до 2 знаків після коми |
+| `stock` | ні | ціле число не менше 0 (за замовчуванням 0) |
+| `category` | так | id існуючої категорії |
+| `brand` | так | id існуючого бренду |
+
+Request body:
+
+```json
 {
-  "items": [
-    {
-      "id": 1,
-      "name": "Сухий корм для собак Premium",
-      "price": 450.00,
-      "imageUrl": "https://example.com/img/1.jpg",
-      "brand": { "id": 3, "name": "HappyPaws" },
-      "category": { "id": 2, "name": "Корм" },
-      "petType": { "id": 1, "name": "Собаки" }
-    }
-  ],
-  "page": 1,
-  "limit": 20,
-  "total": 57
-}
-</details> <details> <summary><code>GET /api/products/{id}</code> — один товар</summary>
-
-#### Response 200 OK
-
-{
-  "id": 1,
-  "name": "Сухий корм для собак Premium",
-  "description": "Повнораціонний корм для дорослих собак середніх порід.",
-  "price": 450.00,
+  "name": "Сухий корм для собак, 2 кг",
+  "description": "Корм для дорослих собак середніх порід",
+  "price": "349.90",
   "stock": 25,
-  "imageUrl": "<https://example.com/img/1.jpg>",
-  "brand": { "id": 3, "name": "HappyPaws" },
-  "category": { "id": 2, "name": "Корм" },
-  "petType": { "id": 1, "name": "Собаки" }
+  "category": 1,
+  "brand": 1
 }
+```
 
-#### Response 404 Not Found: товару не існує
+* `201 Created`: створений товар (формат як у `GET /api/products/{id}`).
+* `400 Bad Request`: некоректні дані, `{"error": "Некоректні дані.", "details": {"name": ["Це поле не може бути порожнім."]}}`. Також `400`, якщо тіло не є правильним JSON: `{"error": "Некоректний JSON."}`.
+* `401`: немає токена або він неправильний.
+* `403`: користувач не адміністратор.
 
-</details> <details> <summary><code>POST /api/products</code> — створити товар <b>(admin)</b></summary>
+</details>
 
-{
-  "name": "Іграшка-м'ячик для котів",
-  "description": "М'який м'ячик з брязкальцем.",
-  "price": 85.00,
-  "stock": 100,
-  "imageUrl": "<https://example.com/img/2.jpg>",
-  "brandId": 3,
-  "categoryId": 4,
-  "petTypeId": 2
-}
+<details> <summary><code>PUT /api/products/{id}</code> — замінити товар <b>(admin)</b></summary>
 
-#### Response 201 Created
+`PUT` замінює об'єкт повністю: усі обов'язкові поля треба передати знову (формат тіла як у `POST`).
 
-створений товар (формат як у GET /api/products/{id}).
+* `200 OK`: оновлений товар.
+* `400 Bad Request`: некоректні дані або зламаний JSON.
+* `401` / `403`: немає входу або прав.
+* `404 Not Found`: товару не існує.
+* `PATCH` не підтримується: `405`.
 
-#### Response 400 Bad Request
+</details>
 
-некоректні дані.
+<details> <summary><code>DELETE /api/products/{id}</code> — видалити товар <b>(admin)</b></summary>
 
-#### Response 401 / 403
+* `204 No Content`: видалено, тіла відповіді немає.
+* `401` / `403`: немає входу або прав.
+* `404 Not Found`: товару не існує.
 
-немає входу або прав.
-
-</details> <details> <summary><code>PUT /api/products/{id}</code> — оновити товар <b>(admin)</b></summary>
-
-Request body: як у POST /api/products. Response 200 OK: оновлений товар. Response 404 Not Found: товару не існує.
-
-</details> <details> <summary><code>DELETE /api/products/{id}</code> — видалити товар <b>(admin)</b></summary>
-
-Response 204 No Content. Response 404 Not Found: товару не існує.
 </details>
 
 ### Бренди
 
-<details> <summary><code>GET /api/brands</code>, <code>GET /api/brands/{id}</code> — читання брендів</summary>
+Поля: `id`, `name` (унікальне, до 100 символів), `country` (необов'язкове).
 
-GET /api/brands → 200 OK:
+<details> <summary><code>GET /api/brands</code>, <code>GET /api/brands/{id}</code> — читання</summary>
 
-[ { "id": 3, "name": "HappyPaws", "country": "Німеччина" } ]
+Токен не потрібен.
 
-GET /api/brands/{id} → 200 OK:
+`GET /api/brands` → `200 OK`:
 
-{ "id": 3, "name": "HappyPaws", "country": "Німеччина", "description": "Корми та аксесуари для тварин." }
+```json
+[ { "id": 1, "name": "Acana", "country": "Канада" } ]
+```
 
-404 Not Found: бренду не існує.
+`GET /api/brands/{id}` → `200 OK`: один об'єкт, або `404`: `{"error": "Бренд з id=999 не знайдено."}`.
 
-</details> <details> <summary><code>GET /api/brands/{id}/products</code> — товари бренду</summary>
+</details>
 
-Query-параметри: sort, page, limit. Response 200 OK: як у GET /api/products. Response 404 Not Found: бренду не існує.
+<details> <summary><code>POST</code>, <code>PUT</code>, <code>DELETE</code> для брендів <b>(admin)</b></summary>
 
-</details> <details> <summary><code>POST</code>, <code>PUT</code>, <code>DELETE</code> для брендів <b>(admin)</b></summary>
+`POST /api/brands`, request body: `{ "name": "Acana", "country": "Канада" }`. Відповіді: `201 Created` (створений бренд), `400` (порожня або повторна назва), `401`, `403`.
 
-POST /api/brands, request body:
-{ "name": "HappyPaws", "country": "Німеччина", "description": "Корми та аксесуари для тварин." }
+`PUT /api/brands/{id}`: тіло як у `POST`, відповіді `200 OK`, `400`, `401`, `403`, `404`.
 
-Response 201 Created: створений бренд.
+`DELETE /api/brands/{id}`: `204 No Content`, `401`, `403`, `404`, або `409 Conflict`, якщо у бренду є товари: `{"error": "Неможливо видалити бренд «Acana»: з ним пов'язано товарів - 1."}`.
 
-PUT /api/brands/{id}: body як у POST, response 200 OK з оновленим брендом, або 404 Not Found.
-
-DELETE /api/brands/{id}: response 204 No Content, 404 Not Found, або 409 Conflict, якщо у бренду є товари.
 </details>
 
 ### Категорії
 
-<details> <summary><code>GET /api/categories</code>, <code>GET /api/categories/{id}/products</code> — читання</summary>
+Поля: `id`, `name` (унікальне, до 100 символів), `description` (необов'язкове).
 
-GET /api/categories → 200 OK:
-[ { "id": 2, "name": "Корм" }, { "id": 4, "name": "Іграшки" } ]
+<details> <summary><code>GET /api/categories</code>, <code>GET /api/categories/{id}</code> — читання</summary>
 
-GET /api/categories/{id}/products: query sort, page, limit; response 200 OK як у GET /api/products, або 404 Not Found.
+Токен не потрібен.
 
-</details> <details> <summary><code>POST</code>, <code>PUT</code>, <code>DELETE</code> для категорій <b>(admin)</b></summary>
+`GET /api/categories` → `200 OK`:
 
-POST /api/categories, request body:
-{ "name": "Іграшки" }
+```json
+[ { "id": 1, "name": "Корм", "description": "Корм для тварин" } ]
+```
 
-Response 201 Created: { "id": 4, "name": "Іграшки" }.
+`GET /api/categories/{id}` → `200 OK`: один об'єкт, або `404`: `{"error": "Категорію з id=999 не знайдено."}`.
 
-PUT /api/categories/{id}: body { "name": "Іграшки та ігри" }, response 200 OK або 404 Not Found.
-
-DELETE /api/categories/{id}: response 204 No Content, 404 Not Found, або 409 Conflict, якщо в категорії є товари.
 </details>
 
-### Види тварин
+<details> <summary><code>POST</code>, <code>PUT</code>, <code>DELETE</code> для категорій <b>(admin)</b></summary>
 
-<details> <summary><code>GET /api/pet-types</code> — види тварин для фільтра</summary>
+`POST /api/categories`, request body: `{ "name": "Корм", "description": "Корм для тварин" }`. Відповіді: `201 Created`, `400` (порожня або повторна назва), `401`, `403`.
 
-Response 200 OK:
-[ { "id": 1, "name": "Собаки" }, { "id": 2, "name": "Коти" }, { "id": 3, "name": "Гризуни" } ]
-</details>
+`PUT /api/categories/{id}`: тіло як у `POST`, відповіді `200 OK`, `400`, `401`, `403`, `404`.
 
-### Авторизація та профіль
+`DELETE /api/categories/{id}`: `204 No Content`, `401`, `403`, `404`, або `409 Conflict`, якщо в категорії є товари: `{"error": "Неможливо видалити категорію «Корм»: до неї належить товарів - 1."}`.
 
-<details> <summary><code>POST /api/auth/register</code> — реєстрація</summary>
-
-Request body:
-{ "name": "Поліна Костюк", "email": "<polina@gmail.com>", "password": "securePassword123" }
-Response 201 Created:
-{ "id": 10, "name": "Поліна Костюк", "email": "<polina@gmail.com.com>" }
-
-Response 400 Bad Request: некоректні дані. Response 409 Conflict: такий email уже зареєстрований.
-
-</details> <details> <summary><code>POST /api/auth/login</code> — вхід</summary>
-
-Request body:
-{ "email": "<polina@gmail.com>", "password": "securePassword123" }
-
-Response 200 OK: { "token": "..." } Response 401 Unauthorized: невірний email або пароль.
-
-[!NOTE] Формат токена та механізм авторизації будуть уточнені на етапі реалізації авторизації.
-
-</details> <details> <summary><code>GET /api/users/me</code>, <code>PUT /api/users/me</code> — профіль <b>(auth)</b></summary>
-
-GET /api/users/me → 200 OK:
-{ "id": 10, "name": "Поліна Костюк", "email": "<polina@gmail.com>", "phone": "+380636667788" }
-
-PUT /api/users/me, request body:
-{ "name": "Поліна Костюк", "phone": "+380636667788" }
-
-Response 200 OK: оновлений профіль. Для обох: 401 Unauthorized, якщо немає входу.
-</details>
-
-### Кошик
-
-<details> <summary><code>GET /api/cart</code> — мій кошик <b>(auth)</b></summary>
-Response 200 OK:
-{
-  "items": [
-    { "productId": 1, "name": "Сухий корм для собак Premium", "price": 450.00, "quantity": 2 }
-  ],
-  "totalPrice": 900.00
-}
-</details> <details> <summary><code>POST /api/cart/items</code> — додати товар <b>(auth)</b></summary>
-
-Request body: { "productId": 1, "quantity": 2 } Response 201 Created: оновлений кошик (формат як у GET /api/cart). Response 404 Not Found: товару не існує.
-
-</details> <details> <summary><code>PATCH /api/cart/items/{productId}</code> — змінити кількість <b>(auth)</b></summary>
-
-Request body: { "quantity": 3 } Response 200 OK: оновлений кошик. Response 404 Not Found: товару немає в кошику.
-
-</details> <details> <summary><code>DELETE /api/cart/items/{productId}</code> — прибрати товар <b>(auth)</b></summary>
-
-Response 204 No Content. Response 404 Not Found: товару немає в кошику.
-</details>
-
-### Замовлення
-
-<details> <summary><code>POST /api/orders</code> — створити замовлення з кошика <b>(auth)</b></summary>
-
-Тіло запиту відсутнє. Замовлення створюється з усіх товарів кошика, після чого кошик очищується.
-Response 201 Created:
-{
-  "id": 55,
-  "status": "NEW",
-  "createdAt": "2026-10-13T18:30:00Z",
-  "totalPrice": 900.00,
-  "items": [
-    { "productId": 1, "name": "Сухий корм для собак Premium", "price": 450.00, "quantity": 2 }
-  ]
-}
-
-Response 400 Bad Request: кошик порожній.
-
-</details> <details> <summary><code>GET /api/orders</code>, <code>GET /api/orders/{id}</code> — мої замовлення <b>(auth)</b></summary>
-
-GET /api/orders → 200 OK:
-[ { "id": 55, "status": "NEW", "createdAt": "2026-10-13T18:30:00Z", "totalPrice": 900.00 } ]
-
-GET /api/orders/{id} → 200 OK: формат як у відповіді POST /api/orders. 404 Not Found: замовлення не існує або належить іншому користувачу.
-</details>
-
-### Про нас
-
-<details> <summary><code>GET /api/about</code> — контакти, доставка, повернення</summary>
-
-Response 200 OK:
-
-{
-  "contacts": {
-    "phone": "+380634445566",
-    "email": "<info@petshop.example>",
-    "address": "м. Київ, вул. Свободв, 45"
-  },
-  "delivery": "Нова пошта, 1-3 дні.",
-  "returns": "Повернення протягом 14 днів."
-}
 </details>
 
 ![Схема бази даних](1.png)
 
-### Авторизація та права доступу
+## Авторизація та права доступу
 
 Реалізовано в окремому Django app `users`: реєстрація, вхід із JWT, оновлення токена, профіль і обмеження доступу.
 
@@ -465,3 +430,28 @@ Response `401`: немає токена, він прострочений чи н
 | реєстрація, вхід, оновлення токена | так | так | так |
 
 Адміністратор: користувач з `is_staff = True`, його створює `python manage.py createsuperuser`. `401` означає «ви не увійшли», `403` означає «ви увійшли, але прав недостатньо».
+
+## Запланований функціонал (ще не реалізовано)
+
+Нижче те, що входить у задум проєкту, але в API ще немає. Ці адреси **не працюють**, їх не слід шукати в Swagger.
+
+**Що буде на сайті.** Каталог товарів з пошуком за назвою, фільтрами (вид тварини, категорія, бренд, ціна) та сортуванням. Сторінки брендів і категорій зі списком їхніх товарів. Керування асортиментом для адміністратора на сайті. Профіль з історією замовлень і редагуванням даних. Кошик і замовлення (спрощено: без оплати). Сторінка «Про нас»: контакти, доставка, повернення.
+
+**Планові ендпоінти.**
+
+| Метод | Адреса | Опис |
+|---|---|---|
+| GET | `/api/brands/{id}/products` | Товари бренду |
+| GET | `/api/categories/{id}/products` | Товари категорії |
+| GET | `/api/pet-types` | Види тварин (для фільтра) |
+| PUT | `/api/users/me` | Редагувати мій профіль |
+| GET | `/api/cart` | Мій кошик |
+| POST | `/api/cart/items` | Додати товар у кошик |
+| PATCH | `/api/cart/items/{productId}` | Змінити кількість |
+| DELETE | `/api/cart/items/{productId}` | Прибрати товар з кошика |
+| POST | `/api/orders` | Створити замовлення з кошика |
+| GET | `/api/orders` | Мої замовлення |
+| GET | `/api/orders/{id}` | Деталі мого замовлення |
+| GET | `/api/about` | Інформація «Про нас» |
+
+Також заплановано пошук, фільтри та пагінацію (`?page=1&limit=20`) для `GET /api/products`.
