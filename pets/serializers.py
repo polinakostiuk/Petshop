@@ -18,3 +18,13 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+
+
+
+class ErrorSerializer(serializers.Serializer):
+
+    error = serializers.CharField(help_text='Опис помилки')
+    details = serializers.DictField(
+        required=False,
+        help_text='Лише для 400: список проблем по кожному полю',
+    )

@@ -9,23 +9,39 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
-
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
+
+
+def env_list(name, default=''):
+    """Читає зі змінної середовища список значень через кому."""
+    return [item.strip() for item in os.environ.get(name, default).split(',')
+            if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7*7-*7rb&&d30r)%pr+i#z=9-3e1w^qkw2#l-h)^t8yxt7pj(9'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        'Не задано SECRET_KEY. Скопіюйте .env.example у .env '
+        'і впишіть туди свій секретний ключ (див. README).'
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', '127.0.0.1,localhost')
 
 
 # Application definition
@@ -41,6 +57,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'pets',
     'users',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -125,12 +142,11 @@ STATIC_URL = 'static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:63342',
-    'http://localhost:63342',
-]
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'http://127.0.0.1:3000,http://localhost:3000,'
+    'http://127.0.0.1:63342,http://localhost:63342',
+)
 
 
 REST_FRAMEWORK = {
@@ -140,7 +156,67 @@ REST_FRAMEWORK = {
     ],
 
     'EXCEPTION_HANDLER': 'users.exceptions.api_exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'PetShop API',
+    'DESCRIPTION': (
+        'API інтернет-магазину товарів для тварин: каталог (категорії, '
+        'бренди, товари) та авторизація за JWT.\n\n'
+        'Читати каталог можуть усі. Створювати, змінювати й видаляти - лише '
+        'адміністратор. Захищені запити потребують заголовок '
+        '`Authorization: Bearer <access-токен>`; токен видає '
+        '`POST /api/auth/login`.\n\n'
+        'Усі помилки мають формат `{"error": "..."}`, для 400 додається '
+        '`details` з помилками по полях.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 JWT_ACCESS_LIFETIME_SECONDS = 5 * 60
 JWT_REFRESH_LIFETIME_SECONDS = 7 * 24 * 60 * 60
+
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+LOG_DIR = BASE_DIR / 'logs'
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '{asctime} {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+        'file': {
+            # файл не росте безкінечно: максимум 1 МБ, лишаємо 3 старі копії
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOG_DIR / 'petshop.log',
+            'maxBytes': 1024 * 1024,
+            'backupCount': 3,
+            'encoding': 'utf-8',
+            'formatter': 'standard',
+        },
+    },
+    'loggers': {
+        # наші застосунки: pets.views, users.views, users.authentication...
+        'pets': {
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'users': {
+            'handlers': ['console', 'file'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}

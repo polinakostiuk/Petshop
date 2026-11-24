@@ -1,0 +1,28 @@
+[
+  {"model": "pets.category", "pk": 1,
+   "fields": {"name": "Корм", "description": "Корм для тварин"}},
+  {"model": "pets.category", "pk": 2,
+   "fields": {"name": "Іграшки", "description": null}},
+  {"model": "pets.category", "pk": 3,
+   "fields": {"name": "Порожня категорія", "description": null}},
+
+  {"model": "pets.brand", "pk": 1,
+   "fields": {"name": "Acana", "country": "Канада"}},
+  {"model": "pets.brand", "pk": 2,
+   "fields": {"name": "Kong", "country": "США"}},
+  {"model": "pets.brand", "pk": 3,
+   "fields": {"name": "Порожній бренд", "country": null}},
+
+  {"model": "pets.product", "pk": 1,
+   "fields": {"name": "Сухий корм для собак", "description": "2 кг",
+              "price": "349.90", "stock": 10, "category": 1, "brand": 1,
+              "created_at": "2026-01-01T10:00:00Z"}},
+  {"model": "pets.product", "pk": 2,
+   "fields": {"name": "Сухий корм для котів", "description": null,
+              "price": "299.00", "stock": 0, "category": 1, "brand": 1,
+              "created_at": "2026-01-02T10:00:00Z"}},
+  {"model": "pets.product", "pk": 3,
+   "fields": {"name": "М'яч Kong", "description": "Гумовий м'яч",
+              "price": "120.50", "stock": 5, "category": 2, "brand": 2,
+              "created_at": "2026-01-03T10:00:00Z"}}
+]

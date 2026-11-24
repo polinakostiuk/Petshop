@@ -1,0 +1,1179 @@
+openapi: 3.0.3
+info:
+  title: PetShop API
+  version: 1.0.0
+  description: |-
+    API інтернет-магазину товарів для тварин: каталог (категорії, бренди, товари) та авторизація за JWT.
+
+    Читати каталог можуть усі. Створювати, змінювати й видаляти - лише адміністратор. Захищені запити потребують заголовок `Authorization: Bearer <access-токен>`; токен видає `POST /api/auth/login`.
+
+    Усі помилки мають формат `{"error": "..."}`, для 400 додається `details` з помилками по полях.
+paths:
+  /api/auth/login:
+    post:
+      operationId: auth_login_create
+      description: 'Перевіряє ім''я користувача й пароль і видає два токени: access
+        (живе 5 хвилин, передається в Authorization: Bearer) та refresh (живе 7 днів,
+        потрібен лише для POST /api/auth/refresh).'
+      summary: 'Вхід: отримати токени'
+      tags:
+      - Авторизація
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+            examples:
+              Вхід:
+                value:
+                  username: anna
+                  password: Str0ng-pass-2026
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Невірне ім'я користувача або пароль.
+          description: '401: невірне ім''я користувача або пароль.'
+  /api/auth/refresh:
+    post:
+      operationId: auth_refresh_create
+      description: Обмінює refresh-токен на новий access-токен. Викликається, коли
+        захищений запит повернув 401.
+      summary: Оновити access-токен
+      tags:
+      - Авторизація
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Refresh'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Термін дії токена закінчився.
+          description: '401: refresh-токен недійсний або прострочений.'
+  /api/auth/register:
+    post:
+      operationId: auth_register_create
+      description: Створює звичайного користувача (не адміністратора). Токен не потрібен.
+        Пароль зберігається лише у вигляді хешу.
+      summary: Реєстрація
+      tags:
+      - Авторизація
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+            examples:
+              НоваКористувачка:
+                value:
+                  username: anna
+                  first_name: Анна
+                  last_name: Коваль
+                  email: anna@example.com
+                  password: Str0ng-pass-2026
+                  password_confirmation: Str0ng-pass-2026
+                summary: Нова користувачка
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+  /api/brands:
+    get:
+      operationId: brands_list
+      description: Доступно всім, токен не потрібен. Об'єкти відсортовані за id.
+      summary: Список брендів
+      tags:
+      - Бренди
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Brand'
+          description: ''
+    post:
+      operationId: brands_create
+      description: Лише для адміністратора (потрібен access-токен).
+      summary: Створити бренд
+      tags:
+      - Бренди
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Brand'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Brand'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Brand'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+  /api/brands/{id}:
+    get:
+      operationId: brands_retrieve
+      description: Доступно всім, токен не потрібен.
+      summary: Один бренд за id
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Бренди
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Бренд з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    put:
+      operationId: brands_update
+      description: 'Лише для адміністратора. PUT замінює об''єкт повністю: усі обов''язкові
+        поля треба передати знову. Часткового оновлення (PATCH) немає, відповідь 405.'
+      summary: Оновити бренд
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Бренди
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Brand'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Brand'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Brand'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Бренд з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    delete:
+      operationId: brands_destroy
+      description: Лише для адміністратора.
+      summary: Видалити бренд
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Бренди
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Видалено, тіла відповіді немає.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Бренд з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Неможливо видалити бренд «Acana»: з ним пов''язано товарів
+                      - 1.'
+          description: '409: об''єкт не можна видалити, бо до нього прив''язані товари.'
+  /api/categories:
+    get:
+      operationId: categories_list
+      description: Доступно всім, токен не потрібен. Об'єкти відсортовані за id.
+      summary: Список категорій
+      tags:
+      - Категорії
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+    post:
+      operationId: categories_create
+      description: Лише для адміністратора (потрібен access-токен).
+      summary: Створити категорію
+      tags:
+      - Категорії
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+  /api/categories/{id}:
+    get:
+      operationId: categories_retrieve
+      description: Доступно всім, токен не потрібен.
+      summary: Одна категорія за id
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Категорії
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Категорію з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    put:
+      operationId: categories_update
+      description: 'Лише для адміністратора. PUT замінює об''єкт повністю: усі обов''язкові
+        поля треба передати знову. Часткового оновлення (PATCH) немає, відповідь 405.'
+      summary: Оновити категорію
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Категорії
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Category'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Category'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Category'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Категорію з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    delete:
+      operationId: categories_destroy
+      description: Лише для адміністратора.
+      summary: Видалити категорію
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Категорії
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Видалено, тіла відповіді немає.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Категорію з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Неможливо видалити категорію «Корм»: до неї належить товарів
+                      - 1.'
+          description: '409: об''єкт не можна видалити, бо до нього прив''язані товари.'
+  /api/products:
+    get:
+      operationId: products_list
+      description: Доступно всім, токен не потрібен. Об'єкти відсортовані за id.
+      summary: Список товарів
+      tags:
+      - Товари
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+          description: ''
+    post:
+      operationId: products_create
+      description: Лише для адміністратора (потрібен access-токен).
+      summary: Створити товар
+      tags:
+      - Товари
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+            examples:
+              НовийТовар:
+                value:
+                  name: Сухий корм для собак, 2 кг
+                  description: Повноцінний корм для дорослих собак середніх порід
+                  price: '349.90'
+                  stock: 25
+                  category: 1
+                  brand: 1
+                summary: Новий товар
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+  /api/products/{id}:
+    get:
+      operationId: products_retrieve
+      description: Доступно всім, токен не потрібен.
+      summary: Один товар за id
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Товари
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Товар з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    put:
+      operationId: products_update
+      description: 'Лише для адміністратора. PUT замінює об''єкт повністю: усі обов''язкові
+        поля треба передати знову. Часткового оновлення (PATCH) немає, відповідь 405.'
+      summary: Оновити товар
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Товари
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+            examples:
+              НовийТовар:
+                value:
+                  name: Сухий корм для собак, 2 кг
+                  description: Повноцінний корм для дорослих собак середніх порід
+                  price: '349.90'
+                  stock: 25
+                  category: 1
+                  brand: 1
+                summary: Новий товар
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ПорожняНазва:
+                  value:
+                    error: Некоректні дані.
+                    details:
+                      name:
+                      - Це поле не може бути порожнім.
+                  summary: Порожня назва
+          description: '400: некоректні дані або зламаний JSON.'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Товар з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+    delete:
+      operationId: products_destroy
+      description: Лише для адміністратора.
+      summary: Видалити товар
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Товари
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Видалено, тіла відповіді немає.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Недостатньо прав: цю дію може виконати лише адміністратор.'
+          description: '403: користувач увійшов, але він не адміністратор.'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: Товар з id=999999 не знайдено.
+          description: '404: об''єкта з таким id не існує.'
+  /api/users/me:
+    get:
+      operationId: users_me_retrieve
+      description: Дані поточного користувача. Потрібен access-токен.
+      summary: Мій профіль
+      tags:
+      - Авторизація
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                Приклад:
+                  value:
+                    error: 'Потрібна авторизація. Увійдіть і передайте access-токен
+                      у заголовку Authorization: Bearer <токен>.'
+          description: '401: немає access-токена, він прострочений або неправильний.'
+components:
+  schemas:
+    Brand:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Бренд / Виробник
+          maxLength: 100
+        country:
+          type: string
+          nullable: true
+          title: Країна
+          maxLength: 100
+      required:
+      - id
+      - name
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Назва категорії
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+          title: Опис
+      required:
+      - id
+      - name
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Опис помилки
+        details:
+          type: object
+          additionalProperties: {}
+          description: 'Лише для 400: список проблем по кожному полю'
+      required:
+      - error
+    Login:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+      - password
+      - username
+    LoginResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - refresh
+      - user
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category_name:
+          type: string
+          title: Назва категорії
+          readOnly: true
+        brand_name:
+          type: string
+          title: Бренд / Виробник
+          readOnly: true
+        name:
+          type: string
+          title: Назва товару
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+          title: Опис товару
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Ціна
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Кількість на складі
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        category:
+          type: integer
+          title: Категорія
+        brand:
+          type: integer
+          title: Бренд
+      required:
+      - brand
+      - brand_name
+      - category
+      - category_name
+      - created_at
+      - id
+      - name
+      - price
+    Refresh:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    RefreshResponse:
+      type: object
+      properties:
+        access:
+          type: string
+      required:
+      - access
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        password_confirmation:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - email
+      - password
+      - password_confirmation
+      - username
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          title: Ім'я користувача
+          description: 'Необхідно: 150 або менше символів. тільки букви, цифри та  знаки
+            @/./+/-/_.'
+        first_name:
+          type: string
+          readOnly: true
+          title: Ім'я
+        last_name:
+          type: string
+          readOnly: true
+          title: Прізвище
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email адреса
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Статус персоналу
+          description: Визначає, чи може користувач увійти до цього сайту адміністрування.
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Дата приєднання
+      required:
+      - date_joined
+      - email
+      - first_name
+      - id
+      - is_staff
+      - last_name
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access-токен з POST /api/auth/login (вставляти без слова Bearer).

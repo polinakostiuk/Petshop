@@ -1,11 +1,19 @@
+import logging
+
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.views import exception_handler
+
+logger = logging.getLogger(__name__)
 
 
 def api_exception_handler(exc, context):
 
     response = exception_handler(exc, context)
     if response is None:
+
+        request = context['request']
+        logger.error('Необроблена помилка під час %s %s',
+                     request.method, request.path, exc_info=exc)
         return None
 
     if isinstance(exc, NotAuthenticated):
